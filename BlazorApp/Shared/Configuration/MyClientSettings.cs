@@ -6,5 +6,5 @@ using System.Threading.Tasks;
 
 namespace BlazorApp.Shared.Configuration;
 public class MyClientSettings {
-    public string HelloMessage { get; set; }
+    public string HelloMessage { get; set; } = "Hello, world from MyClientSettings class default!";
 }

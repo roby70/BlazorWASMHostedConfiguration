@@ -1,9 +1,22 @@
 ﻿@page "/"
+@using BlazorApp.Shared.Configuration
+@using Microsoft.Extensions.Options
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>@Settings.HelloMessage</h1>
 
 Welcome to your new app.
 
 <SurveyPrompt Title="How is Blazor working for you?" />
+
+@code {
+    [Inject] public IOptions<MyClientSettings> MyClientSettingOptions { get; set; } = null!;
+
+    MyClientSettings Settings = new MyClientSettings();
+
+    protected override async Task OnInitializedAsync() {
+        Settings = MyClientSettingOptions.Value;
+    }
+
+}
