@@ -53,7 +53,71 @@ In the `wwwroot` folder of BlazorApp.Client there is a `appsettings.json` file w
 
 If you try to run directly the BlazorApp.Client from Visual Studio you will find that the previous message will be shown.
 
-## Override appsettings.json on server side
+## Setup host server to provide appsettings.json file
 
-Since the host server that has the responsability to serve single page application to the browser, it could be used to intercept the request of the appsettings.json file and return a processed file based on his own configuration.
+The basic idea is to insert a configuration part in the server `appsetting.json` file that could integrate/overwrite client side configuration. 
+
+In the specific case I would like to overwrite the `HelloMessage` setting of `MySettings` part. 
+To process only settings related to client side application I've used a top level setting named `ClientSettings` in server side `appsettings.json`.
+
+```json
+{
+  ...
+  "ClientSettings": {
+    "MySettings": {
+      "HelloMessage": "Hello, world from BlazorApp.Server configuration file!"
+    }
+  }
+}
+
+```
+
+
+
+## Add settings from server to client configuration
+
+In client startup a file (named  `appsettings.server.json`) retrieved from the server was added to the Configuration. To retrieve the file the HttpClient class could be used.
+
+```Csharp
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
+
+var customProvider = builder.Services.BuildServiceProvider();
+using (var httpClient = new HttpClient()) {
+    httpClient.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
+    var appSettingsJson = await httpClient.GetStreamAsync("/appsettings.server.json");
+    if (appSettingsJson != null) {
+        builder.Configuration.Add<JsonStreamConfigurationSource>(s =>
+            s.Stream = appSettingsJson);
+    }
+}
+```
+
+The code is placed after `WebAssemblyHostBuilder.CreateDefault` where the default appsettings.json file was retrieved from the server (you could check  [WebAssemblyHostBuilder source code]([WebAssemblyHostBuilder.cs (dot.net)](https://source.dot.net/#Microsoft.AspNetCore.Components.WebAssembly/Hosting/WebAssemblyHostBuilder.cs,cb05aad758ee3460)) to check for the startup process)
+
+> In WebAssemblyHostBuilder the IJSUnmarshalledRuntime service is used to retrieve the appsettings.json file. But the class that implements this interface is not public, so HttpClient was used to retrieve the other file.
+
+In the server the *minimal API* routing was used to retrieve the file, 
+
+```csharp
+// Place this as first to avoid Blazor client data to serve configuration
+app.MapGet("/appsettings.server.json", async ctx => {
+    var clientSettingsSection = app.Configuration.GetSection("ClientSettings");
+    var clientJsonContent = Serialize(clientSettingsSection).ToString();
+    await ctx.Response.WriteAsync(clientJsonContent);
+});
+
+...
+
+static JToken Serialize(IConfiguration config) {
+    JObject obj = new JObject();
+    foreach (var child in config.GetChildren()) {
+        obj.Add(child.Key, Serialize(child));
+    }
+
+    if (!obj.HasValues && config is IConfigurationSection section)
+        return new JValue(section.Value);
+
+    return obj;
+}
+```
 
