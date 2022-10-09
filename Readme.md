@@ -1,6 +1,10 @@
 # Manage Blazor WASM configuration
 
-In this repository you'll find a sample about managing the configuration of a Blazor WASM application providing settings from the server side.
+In this repository you'll find a sample about managing the configuration of a Blazor WASM application providing settings from the server side, so that at deploy time changes could be applied to client settings.
+
+In particular I was interested in applying settings from the docker container variables, such as API uri and related settings.
+
+The project include a working sample where Blazor WASM application (hosted in ASP.NET server) retrieve settings from both appsettings.json file, included in client project, and from a *virtual* appsettings.server.json file provided by the host ASP.NET server.
 
 ## Why getting configuration from the host server
 
@@ -119,5 +123,19 @@ static JToken Serialize(IConfiguration config) {
 
     return obj;
 }
+```
+
+## Set environment variables in Docker
+
+In Docker it's possible to set host service variables to setup specific configuration elemts.
+
+The .NET configuration automatically retrieve configuration from docker environments.
+In the sample a docker-compose.yml was used to run the container.
+
+```yaml
+    environment:
+      - ClientSettings__MySettings__HelloMessage=Hello, world from docker-compose.yml file!
+      - ClientSettings__MySettings__Setting3=from docker-compose.yml
+
 ```
 

@@ -1,0 +1,11 @@
+version: '3.4'
+
+services:
+  blazorapp.server:
+    image: ${DOCKER_REGISTRY-}blazorappserver
+    build:
+      context: .
+      dockerfile: BlazorApp/Server/Dockerfile
+    environment:
+      - ClientSettings__MySettings__HelloMessage=Hello, world from docker-compose.yml file!
+      - ClientSettings__MySettings__Setting3=from docker-compose.yml
